@@ -11,7 +11,7 @@ This project has been originally fork from https://github.com/the-isz/notipy
 
 Many thanks to its author!
 
-== The following documentation is taken from the notipy project, and is meant to changed
+== The following documentation is taken from the notipy project, and is meant to be changed
 
 
 ktm (aka kill the messenger!) is an implementation of the http://developer.gnome.org/notification-spec/[Desktop Notification Specification]. It shows
