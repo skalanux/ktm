@@ -13,7 +13,7 @@ This project has been originally fork from https://github.com/the-isz/notipy
 
 Many thanks to its author!
 
-The following documentation is taken from the notipy project, and is meant to be changed
+The following documentation has been taken from the notipy project, and is meant to be changed
 -----------------------------------------------------------------------------------------
 
 
