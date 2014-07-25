@@ -49,15 +49,15 @@ import urllib
 import os.path
 
 
-class LayoutAnchor:
+class LayoutAnchor(object):
     NORTH_WEST, SOUTH_WEST, SOUTH_EAST, NORTH_EAST = range(4)
 
 
-class LayoutDirection:
+class LayoutDirection(object):
     VERTICAL, HORIZONTAL = range(2)
 
 
-class Layout:
+class Layout(object):
     @staticmethod
     def layout_north_west(margins, windows, direction):
         base = (margins[3], margins[0])
@@ -117,9 +117,9 @@ class NotificationDaemon(dbus.service.Object):
             "org.freedesktop.Notifications", dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, objectPath)
 
-        self.__lastID = 0
-        self.__windows = collections.OrderedDict()
-        self.__closeEvents = {}
+        self._lastID = 0
+        self._windows = collections.OrderedDict()
+        self._closeEvents = {}
         self.max_expire_timeout = 10000
         self.margins = [0 for x in range(4)]
         self.layoutAnchor = LayoutAnchor.NORTH_WEST
@@ -129,10 +129,10 @@ class NotificationDaemon(dbus.service.Object):
         if max_expire_timeout < 1:
             warnings.warn("Ignoring max_expire_timeout value < 1.")
             return
-        self.__max_expire_timeout = max_expire_timeout
+        self._max_expire_timeout = max_expire_timeout
 
     def max_expire_timeout(self):
-        return self.__max_expire_timeout
+        return self._max_expire_timeout
 
     max_expire_timeout = property(max_expire_timeout, set_max_expire_timeout, \
         doc="Maximum time for notifications to be shown in [ms]. "
@@ -141,7 +141,7 @@ class NotificationDaemon(dbus.service.Object):
     def set_margins(self, margins):
         try:
             newMargins = [int(x) for x in itertools.islice(margins, 4)]
-            self.__margins = newMargins
+            self._margins = newMargins
         except ValueError:
             warnings.warn(
                     "Ignoring margins value because not all values could be "
@@ -154,14 +154,14 @@ class NotificationDaemon(dbus.service.Object):
                           "enough values.")
 
     def margins(self):
-        return self.__margins
+        return self._margins
 
     margins = property(margins, set_margins,
         doc="Margins for top, right, bottom and left side of the screen.")
 
     def set_layout_anchor(self, layoutAnchor):
         try:
-            self.__layoutAnchorFunc = \
+            self._layoutAnchorFunc = \
                 {
                     LayoutAnchor.NORTH_WEST: Layout.layout_north_west,
                     LayoutAnchor.SOUTH_WEST: Layout.layout_south_west,
@@ -172,10 +172,10 @@ class NotificationDaemon(dbus.service.Object):
             warnings.warn("Ignoring invalid layoutAnchor setting.")
             return
 
-        self.__layoutAnchor = layoutAnchor
+        self._layoutAnchor = layoutAnchor
 
     def layout_anchor(self):
-        return self.__layoutAnchor
+        return self._layoutAnchor
 
     layoutAnchor = property(layout_anchor, set_layout_anchor,
         doc="Layout origin for the notification windows.")
@@ -186,22 +186,22 @@ class NotificationDaemon(dbus.service.Object):
             warnings.warn("Ignoring invalid layoutDirection setting.")
             return
 
-        self.__layoutDirection = layoutDirection
+        self._layoutDirection = layoutDirection
 
     def layout_direction(self):
-        return self.__layoutDirection
+        return self._layoutDirection
 
     layoutDirection = property(layout_direction, set_layout_direction,
         doc="Layout direction for the notification windows.")
 
-    def __update_layout(self):
+    def _update_layout(self):
         """
         Recalculates the layout of all notification windows.
         """
-        self.__layoutAnchorFunc(
-            self.margins, self.__windows, self.layoutDirection)
+        self._layoutAnchorFunc(
+            self.margins, self._windows, self.layoutDirection)
 
-    def __create_win(self, summary, body, icon=None):
+    def _create_win(self, summary, body, icon=None):
         win = Gtk.Window(type=Gtk.WindowType.POPUP)
 
         frame = Gtk.Frame()
@@ -294,20 +294,20 @@ class NotificationDaemon(dbus.service.Object):
 
         return win
 
-    def __notification_expired(self, id):
+    def _notification_expired(self, id):
         """
         Callback called when a notification expired.
 
         @param id: the ID of the notification.
         @returns: False
         """
-        self.__close_notification(id, 1)
+        self._close_notification(id, 1)
         return False  # Don't repeat timeout
 
-    def __window_clicked(self, widget, event, id):
-        self.__close_notification(id, 2)
+    def _window_clicked(self, widget, event, id):
+        self._close_notification(id, 2)
 
-    def __remove_close_event(self, id):
+    def _remove_close_event(self, id):
         """
         Removes the close event belonging to the notification with ID id.
 
@@ -315,34 +315,34 @@ class NotificationDaemon(dbus.service.Object):
                    removed.
         @return: True if a close event was removed, False otherwise.
         """
-        if id not in self.__closeEvents:
+        if id not in self._closeEvents:
             return False
 
-        closeEvent = self.__closeEvents.pop(id)
+        closeEvent = self._closeEvents.pop(id)
         GLib.source_remove(closeEvent)
         return True
 
-    def __remove_window(self, id, removeFromDict=True):
+    def _remove_window(self, id, removeFromDict=True):
         """
         Removes the window belonging to the notification with ID id.
 
         @param id: the ID of the notification whose window is to be removed.
-        @param removeFromDict: if True, id will be erased from self.__windows.
+        @param removeFromDict: if True, id will be erased from self._windows
         @return: True if a window was removed, False otherwise.
         """
-        if id not in self.__windows:
+        if id not in self._windows:
             return False
 
-        win = self.__windows[id]
+        win = self._windows[id]
         win.hide()
         win.destroy()
 
         if removeFromDict:
-            del self.__windows[id]
+            del self._windows[id]
 
         return True
 
-    def __close_notification(self, id, reason):
+    def _close_notification(self, id, reason):
         """
         Closes a notification and emits NotificationClosed if the notification
         exists.
@@ -351,10 +351,10 @@ class NotificationDaemon(dbus.service.Object):
         @param reason: the reason for closing the notification.
         @returns: True if a notification with this id existed, False otherwise.
         """
-        self.__remove_close_event(id)
+        self._remove_close_event(id)
 
-        if self.__remove_window(id):
-            self.__update_layout()
+        if self._remove_window(id):
+            self._update_layout()
             self.NotificationClosed(id, reason)
             return True
         else:
@@ -398,17 +398,17 @@ class NotificationDaemon(dbus.service.Object):
         notificationID = 0
 
         if 0 != replaces_id:
-            # We can't use __close_notification here because
+            # We can't use _close_notification here because
             # a) the NotificationClosed signal must not be emitted
-            # b) we must not remove replaces_id from __windows or the order of
+            # b) we must not remove replaces_id from _windows or the order of
             #    the values in the dict would be changed
-            # c) that would cause __update_layout to be called twice
-            self.__remove_close_event(replaces_id)
-            self.__remove_window(replaces_id, False)
+            # c) that would cause _update_layout to be called twice
+            self._remove_close_event(replaces_id)
+            self._remove_window(replaces_id, False)
             notificationID = replaces_id
         else:
-            self.__lastID += 1
-            notificationID = self.__lastID
+            self._lastID += 1
+            notificationID = self._lastID
 
         logging.debug("summary: \"{}\", body: \"{}\"".format(
             unicode(summary).encode("ascii", errors="backslashreplace"),
@@ -436,12 +436,12 @@ class NotificationDaemon(dbus.service.Object):
             elif "icon_data" in hints:
                 image = hints["icon_data"]
 
-            win = self.__create_win(summary, body, image)
+            win = self._create_win(summary, body, image)
             win.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
             win.connect(
-                "button-press-event", self.__window_clicked, notificationID)
-            self.__windows[notificationID] = win
-            self.__update_layout()
+                "button-press-event", self._window_clicked, notificationID)
+            self._windows[notificationID] = win
+            self._update_layout()
 
             if 0 != expire_timeout:
                 timeout = \
@@ -451,10 +451,10 @@ class NotificationDaemon(dbus.service.Object):
                 logging.debug("Will close notification {} after {} seconds."
                     .format(notificationID, timeout))
 
-                self.__closeEvents[notificationID] = \
+                self._closeEvents[notificationID] = \
                     GLib.timeout_add_seconds(
                         timeout,
-                        self.__notification_expired,
+                        self._notification_expired,
                         notificationID)
 
         except Exception as e:
@@ -471,7 +471,7 @@ class NotificationDaemon(dbus.service.Object):
         NotificationClosed signal or empty D-BUS error
         @param id: unsigned int
         """
-        if not self.__close_notification(id, 3):
+        if not self._close_notification(id, 3):
             # Don't know what sending back an empty D-BUS error message is
             # supposed to mean...
             pass
