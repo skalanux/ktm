@@ -10,6 +10,16 @@ try:
 except ImportError:
     from distutils.core import setup
 
+import ktm
+
+version = ktm.__version__
+
+if sys.argv[-1] == 'publish':
+    os.system('python setup.py sdist upload')
+    print("You probably want to also tag the version now:")
+    print("  git tag -a %s -m 'version %s'" % (version, version))
+    print("  git push --tags")
+    sys.exit()
 
 readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
@@ -24,7 +34,7 @@ test_requirements = [
 
 setup(
     name='ktm',
-    version='0.1.0',
+    version=version,
     description='Configurable notification daemon with queues and history display',
     long_description=readme + '\n\n' + history,
     author='Juan Manuel Schillaci',
