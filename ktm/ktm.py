@@ -278,6 +278,8 @@ class NotificationDaemon(dbus.service.Object):
                 logging.exception("Invalid pango markup.")
                 l.set_text(s)
 
+        import pdb; pdb.set_trace()  # XXX BREAKPOINT
+
         summaryLabel = Gtk.Label()
         set_label_contents(summaryLabel, summary)
         vBox.pack_start(summaryLabel, False, False, 0)
