@@ -44,7 +44,7 @@ Until now, ktm is configured exclusively via command-line arguments. These
 can be listed via the `--help` command-line option:
 
 ----
-usage: notipy.py [-h] [-l {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [-t EXPIRETIMEOUT] [-m MARGINS]
+usage: ktm.py [-h] [-l {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [-t EXPIRETIMEOUT] [-m MARGINS]
                  [-a {NORTH_WEST,SOUTH_WEST,SOUTH_EAST,NORTH_EAST}] [-d {VERTICAL,HORIZONTAL}]
 
 A notification server implementing the specification from http://developer.gnome.org/notification-spec/.
