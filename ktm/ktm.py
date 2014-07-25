@@ -31,22 +31,24 @@
 
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import argparse
+import collections
+import itertools
+import io
+import logging
+import os.path
+import urllib
+import warnings
 
 import dbus.mainloop.glib
 import dbus.service
 import dbus
-
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, Gdk, GdkPixbuf, Pango
 
-import collections
-import itertools
-import argparse
-import logging
-import warnings
-import urllib
-import os.path
+
+UNREAD_FILE = "/tmp/unread_notifications"
 
 
 class LayoutAnchor(object):
@@ -124,6 +126,7 @@ class NotificationDaemon(dbus.service.Object):
         self.margins = [0 for x in range(4)]
         self.layoutAnchor = LayoutAnchor.NORTH_WEST
         self.layoutDirection = LayoutDirection.VERTICAL
+        self.reset_counter_file()
 
     def set_max_expire_timeout(self, max_expire_timeout):
         if max_expire_timeout < 1:
@@ -201,6 +204,36 @@ class NotificationDaemon(dbus.service.Object):
         self._layoutAnchorFunc(
             self.margins, self._windows, self.layoutDirection)
 
+    def matches_rules(self, summary, body):
+        return True
+
+    def reset_counter_file(self):
+        try:
+            fp = io.open(UNREAD_FILE, "w")
+            fp.write(u"0")
+            fp.close()
+        except:
+            pass
+
+    def get_counter_value(self):
+        try:
+            fp = io.open(UNREAD_FILE, "r")
+            unread_messages = int(fp.readline())
+            fp.close()
+        except:
+            unread_messages = 0
+
+        return unread_messages
+
+    def increase_counter_file(self):
+        try:
+            unread = self.get_counter_value()
+            fp = io.open(UNREAD_FILE, "w")
+            fp.write(unicode(unread+1))
+            fp.close()
+        except:
+            pass
+
     def _create_win(self, summary, body, icon=None):
         win = Gtk.Window(type=Gtk.WindowType.POPUP)
 
@@ -267,6 +300,7 @@ class NotificationDaemon(dbus.service.Object):
         vBox = Gtk.VBox()
         hBox.pack_start(vBox, False, False, 0)
 
+
         def set_label_contents(l, s):
             try:
                 # Parameters: markup_text, length, accel_marker
@@ -278,7 +312,12 @@ class NotificationDaemon(dbus.service.Object):
                 logging.exception("Invalid pango markup.")
                 l.set_text(s)
 
-        import pdb; pdb.set_trace()  # XXX BREAKPOINT
+
+        if self.matches_rules(summary, body):
+            # Temporary rule, this should be match from a config file
+            summary_text = summary.__str__()
+            if summary_text.find('New message')!='-1':
+                self.increase_counter_file()
 
         summaryLabel = Gtk.Label()
         set_label_contents(summaryLabel, summary)
